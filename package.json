@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.66.9",
+    "@tanstack/react-query-devtools": "^5.66.9",
     "@wormhole-foundation/sdk": "^1.10.0",
     "@wormhole-foundation/wormhole-query-sdk": "^0.0.13",
     "axios": "^1.7.9",

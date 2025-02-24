@@ -1,11 +1,11 @@
 import React from "react";
 
-interface AIResponseBoxProps {
+interface AIChatBoxLayoutProps {
 	children: React.ReactNode;
 	className?: string;
 }
 
-export const AIResponseBox: React.FC<AIResponseBoxProps> = ({
+export const AIChatBoxLayout: React.FC<AIChatBoxLayoutProps> = ({
 	children,
 	className = "",
 }) => {
