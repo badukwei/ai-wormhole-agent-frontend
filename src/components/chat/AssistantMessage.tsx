@@ -30,7 +30,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
 			>
 				<div className="text-base">{parsed.message}</div>
 
-				{showChains && coinData && (
+				{showChains && coinData && coinData.addresses.length > 0 && (
 					<div className="mt-2 flex flex-wrap gap-2">
 						{coinData.addresses.map((addr, i) => (
 							<button

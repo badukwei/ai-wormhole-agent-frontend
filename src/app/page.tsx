@@ -29,7 +29,7 @@ const ChatPage = () => {
 	};
 
 	return (
-		<div className="h-screen flex flex-col items-center pb-4 justify-center bg-wormholeBg text-wormholeText overflow-hidden">
+		<div className="h-screen flex flex-col items-center pb-4 justify-center bg-wormholeBg text-wormholeText overflow-hidden px-4">
 			<h1 className="text-3xl font-bold m-8 text-wormholePrimary animate-neonGlow">
 				Wormhole AI Query
 			</h1>
