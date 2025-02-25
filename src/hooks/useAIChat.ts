@@ -2,76 +2,118 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { BACKEND_URL } from "@/config";
+import { CoinMarketCapResponse } from "@/types/coinMarketCap";
+import { Message, QueryResponse } from "@/types/queryAI";
+import { transformCoinMarketCapData } from "@/utils/coinMarketCap";
 
-interface Message {
-	role: "user" | "ai";
-	content: string;
-}
-
-interface QueryResponse {
-	valid: boolean;
-	token: string;
-	chain: string;
-	method: string;
-	userAddress: string | null;
-	ambiguous: boolean;
-}
-
-interface APIResponse {
-	result: string; // JSON string of QueryResponse
-}
-
-enum QueryStep {
-	USER_INPUT = 0, // Step 0: User provides input
-	EXTRACT_QUERY = 1, // Step 1: Extract query parameters using AI
-	REFINE_QUERY = 2, // Step 2: Handle missing fields (error-handling)
-	READY_TO_EXECUTE = 3, // Step 3: Query is complete and ready for execution
-}
+const defaultQueryData: QueryResponse = {
+	valid: false,
+	token: null,
+	chain: null,
+	method: null,
+	userAddress: null,
+	ambiguous: false,
+	missingFields: [],
+	message: "",
+};
 
 export function useAIChat() {
 	const [messages, setMessages] = useState<Message[]>([]);
-	const [queryData, setQueryData] = useState<QueryResponse | null>(null);
-	const [queryStep, setQueryStep] = useState<QueryStep>(QueryStep.USER_INPUT);
+	const [queryData, setQueryData] = useState<QueryResponse>(defaultQueryData);
+	const [coinData, setCoinData] = useState<CoinMarketCapResponse | null>(
+		null
+	);
 
-    console.log("queryData", queryData);
+	const coinSearchMutation = useMutation({
+		mutationFn: async (token: string) => {
+			const response = await fetch(
+				`${BACKEND_URL}/coinmarketcap/search?token=${token}`,
+				{
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}
+			);
 
-	const extractQueryMutation = useMutation({
-		mutationFn: async (query: string) => {
+			if (!response.ok) throw new Error("Failed to fetch coin data");
+			return response.json();
+		},
+		onSuccess: (data) => {
+			const transformedData = transformCoinMarketCapData(data);
+
+			setCoinData(transformedData);
+			setMessages((prev) => [
+				...prev.map((msg) => ({ ...msg, showChains: false })),
+				{
+					role: "assistant",
+					content: JSON.stringify({
+						message: `Found ${transformedData.name} (${transformedData.symbol}) with ${transformedData.addresses.length} supported chain addresses`,
+						...transformedData,
+					}),
+					showChains: true,
+				},
+			]);
+		},
+		onError: (error) => {
+			console.error("Coin search error:", error);
+			setMessages((prev) => [
+				...prev,
+				{
+					role: "assistant",
+					content: JSON.stringify({
+						message:
+							"Sorry, couldn't find information for this token.",
+					}),
+				},
+			]);
+		},
+	});
+
+	const queryMutation = useMutation({
+		mutationFn: async (messages: Message[]) => {
 			const response = await fetch(`${BACKEND_URL}/openai/query-basic`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ query }),
+				body: JSON.stringify({ messages }),
 			});
 
-			if (!response.ok) {
-				throw new Error("Failed to send message");
-			}
-
-			const data: APIResponse = await response.json();
-			// Parse the result string into a QueryResponse object
-			console.log("data.result", data.result);
-			const parsedResult: QueryResponse = JSON.parse(data.result);
-			return parsedResult;
+			if (!response.ok) throw new Error("Failed to send message");
+			const data: { result: string } = await response.json();
+			return JSON.parse(data.result) as QueryResponse;
 		},
 		onSuccess: (data) => {
-			const responseMessage = JSON.stringify(data);
-			console.log("responseMessage", responseMessage);
 			setQueryData(data);
-			setQueryStep(QueryStep.REFINE_QUERY);
-			setMessages((prev) => [
-				...prev,
-				{ role: "ai", content: responseMessage },
-			]);
-		},
-		onError: (error) => {
-			console.error("Extract query error:", error);
-			setQueryData(null);
 			setMessages((prev) => [
 				...prev,
 				{
-					role: "ai",
+					role: "assistant",
+					content: JSON.stringify(data),
+				},
+			]);
+
+			if (data.valid && data.token) {
+				coinSearchMutation.mutate(data.token);
+			}
+		},
+		onError: (error) => {
+			console.error("Extract query error:", error);
+			setQueryData({
+				valid: false,
+				token: null,
+				chain: null,
+				method: null,
+				userAddress: null,
+				ambiguous: false,
+				missingFields: [],
+				message: "Sorry, there was an error processing your request.",
+			});
+			setMessages((prev) => [
+				...prev,
+				{
+					role: "assistant",
 					content:
 						"Sorry, there was an error processing your request.",
 				},
@@ -79,65 +121,26 @@ export function useAIChat() {
 		},
 	});
 
-    const refineQueryMutation = useMutation({
-		mutationFn: async (query: string) => {
-			const response = await fetch(
-				`${BACKEND_URL}/openai/error-handling`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ query }),
-				}
-			);
-
-			if (!response.ok) throw new Error("Failed to refine query");
-
-			const data: APIResponse = await response.json();
-			console.log("data", data);
-			return JSON.parse(data.result) as QueryResponse;
-		},
-		onSuccess: (refinedQuery) => {
-			setQueryData(refinedQuery);
-			setMessages((prev) => [
-				...prev,
-				{ role: "ai", content: JSON.stringify(refinedQuery, null, 2) },
-			]);
-		},
-		onError: (error) => {
-			console.error("Query refinement error:", error);
-			setMessages((prev) => [
-				...prev,
-				{ role: "ai", content: "Error refining query." },
-			]);
-		},
-	});
-
 	const sendQuery = async (message: string) => {
-		console.log("message", message);
 		setMessages((prev) => [...prev, { role: "user", content: message }]);
-
-		if (queryStep === QueryStep.USER_INPUT) {
-			console.log("queryStep", queryStep);
-			// Step 1: Extract Query
-			setQueryStep(QueryStep.EXTRACT_QUERY);
-			await extractQueryMutation.mutateAsync(message);
-		} else if (queryStep === QueryStep.REFINE_QUERY && queryData) {
-			console.log("queryData", queryData);
-			// Step 2: Handle Missing Fields
-			setQueryStep(QueryStep.READY_TO_EXECUTE);
-			await refineQueryMutation.mutateAsync(JSON.stringify(queryData));
-		}
+		await queryMutation.mutateAsync([
+			...messages,
+			{ role: "user", content: message },
+		]);
 	};
-
 
 	return {
 		messages,
 		sendQuery,
 		queryData,
-		queryStep,
-		isLoading:
-			extractQueryMutation.isPending || refineQueryMutation.isPending,
-		error: extractQueryMutation.error || refineQueryMutation.error,
+		coinData,
+		queryStatus: {
+			isLoading: queryMutation.isPending,
+			error: queryMutation.error,
+		},
+		coinStatus: {
+			isLoading: coinSearchMutation.isPending,
+			error: coinSearchMutation.error,
+		},
 	};
 }
-

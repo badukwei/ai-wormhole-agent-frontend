@@ -22,7 +22,7 @@ import { methodMapping } from "@/constants/queryMapping";
 export async function queryMockTokenData(
 	tokenAddress: string,
 	chain: string,
-	method: string = "totalsupply",
+	method: string,
 	userAddress?: string
 ) {
 	try {

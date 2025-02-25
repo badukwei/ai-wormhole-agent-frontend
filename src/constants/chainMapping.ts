@@ -55,3 +55,24 @@ export const chainMapping: {
 	},
 	base: { id: 30, rpc: "https://mainnet.base.org", finality: "archive" },
 };
+
+
+/**
+ * Mapping CMC Chain Names to Wormhole Chain Mapping Keys
+ */
+export const cmcChainMapping: { [key: string]: string } = {
+	"Ethereum": "ethereum",
+	"BNB Smart Chain (BEP20)": "bsc",
+	"Polygon": "polygon",
+	"Avalanche C-Chain": "avalanche",
+	"Oasis Emerald": "oasis_emerald",
+	"Fantom": "fantom",
+	"Karura": "karura",
+	"Acala": "acala",
+	"KAIA": "kaia",
+	"Celo": "celo",
+	"Moonbeam": "moonbeam",
+	"Arbitrum": "arbitrum",
+	"Optimism": "optimism",
+	"Base": "base",
+};

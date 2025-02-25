@@ -9,10 +9,10 @@ import AIChatBox from "@/components/chat/AIChatBox";
 
 const ChatPage = () => {
 	const [input, setInput] = useState("");
-	const { messages, sendQuery, isLoading } = useAIChat();
+	const { messages, sendQuery, queryStatus, coinData } = useAIChat();
 
 	const handleSendMessage = async () => {
-		if (!input.trim() || isLoading) return;
+		if (!input.trim() || queryStatus.isLoading) return;
 
 		const message = input;
 		setInput(""); // Clear input
@@ -48,7 +48,7 @@ const ChatPage = () => {
 				Wormhole AI Chat
 			</h1>
 
-			<AIChatBox messages={messages} />
+			<AIChatBox messages={messages} coinData={coinData} />
 
 			<div className="w-full max-w-3xl mt-4 p-4 border border-white/40 rounded-20 bg-wormholeCard flex items-center rounded">
 				<Textarea
@@ -60,9 +60,9 @@ const ChatPage = () => {
 				/>
 				<button
 					onClick={handleSendMessage}
-					disabled={isLoading}
+					disabled={queryStatus.isLoading}
 					className={`ml-3 p-2 bg-wormholePrimary hover:bg-purple-500 rounded-full text-white flex items-center justify-center ${
-						isLoading ? "opacity-50 cursor-not-allowed" : ""
+						queryStatus.isLoading ? "opacity-50 cursor-not-allowed" : ""
 					}`}
 				>
 					<AiOutlineSend size={16} />
