@@ -3,8 +3,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { BACKEND_URL } from "@/config";
 import { CoinMarketCapResponse } from "@/types/coinMarketCap";
-import { Message, QueryResponse } from "@/types/queryAI";
+import { Message, QueryResponse, QueryResult } from "@/types/query";
 import { transformCoinMarketCapData } from "@/utils/coinMarketCap";
+import { queryMockTokenData } from "@/libs/queryMock";
 
 const defaultQueryData: QueryResponse = {
 	valid: false,
@@ -12,7 +13,6 @@ const defaultQueryData: QueryResponse = {
 	chain: null,
 	method: null,
 	userAddress: null,
-	ambiguous: false,
 	missingFields: [],
 	message: "",
 };
@@ -106,7 +106,6 @@ export function useAIChat() {
 				chain: null,
 				method: null,
 				userAddress: null,
-				ambiguous: false,
 				missingFields: [],
 				message: "Sorry, there was an error processing your request.",
 			});
@@ -121,6 +120,65 @@ export function useAIChat() {
 		},
 	});
 
+	const chainQueryMutation = useMutation({
+		mutationFn: async ({
+			chain,
+			address,
+		}: {
+			chain: string;
+			address: string;
+		}) => {
+			if (!queryData.method) {
+				throw new Error("No method specified for the query.");
+			}
+
+			const result = await queryMockTokenData(
+				address,
+				chain,
+				queryData.method,
+				queryData.userAddress || undefined
+			);
+
+			if ("error" in result) {
+				throw new Error(result.error);
+			}
+
+			return result;
+		},
+		onSuccess: (data) => {
+			const result = {
+				chain: data.chain,
+				method: queryData.method!,
+				token: coinData?.name || queryData.token || "",
+				result: data.result,
+				rawResult: data.rawResult,
+			};
+
+            setMessages((prev) => {
+				const messages = [...prev];
+				messages[messages.length - 1] = {
+					role: "assistant",
+					content: JSON.stringify(result),
+					isResult: true,
+				};
+				return messages;
+			});
+			setQueryData(defaultQueryData);
+			setCoinData(null);
+		},
+		onError: (error) => {
+			setMessages((prev) => [
+				...prev,
+				{
+					role: "assistant",
+					content: JSON.stringify({
+						message: `Failed to query chain: ${error.message}`,
+					}),
+				},
+			]);
+		},
+	});
+
 	const sendQuery = async (message: string) => {
 		setMessages((prev) => [...prev, { role: "user", content: message }]);
 		await queryMutation.mutateAsync([
@@ -129,9 +187,14 @@ export function useAIChat() {
 		]);
 	};
 
+	const handleChainSelect = (chain: string, address: string) => {
+		chainQueryMutation.mutate({ chain, address });
+	};
+
 	return {
 		messages,
 		sendQuery,
+		handleChainSelect,
 		queryData,
 		coinData,
 		queryStatus: {
@@ -141,6 +204,10 @@ export function useAIChat() {
 		coinStatus: {
 			isLoading: coinSearchMutation.isPending,
 			error: coinSearchMutation.error,
+		},
+		chainStatus: {
+			isLoading: chainQueryMutation.isPending,
+			error: chainQueryMutation.error,
 		},
 	};
 }

@@ -11,7 +11,7 @@ export const Textarea: React.FC<TextareaProps> = ({
 }) => {
 	return (
 		<textarea
-			className={`w-full h-32 px-4 py-2 text-white ${className}`}
+			className={`w-full h-24 px-4 py-2 text-white ${className}`}
 			{...props}
 		/>
 	);

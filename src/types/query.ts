@@ -4,7 +4,6 @@ export interface QueryResponse {
 	chain: string | null;
 	method: string | null;
 	userAddress: string | null;
-	ambiguous: false;
 	missingFields: string[];
 	message: string;
 }   
@@ -13,4 +12,13 @@ export interface Message {
 	role: "user" | "assistant";
 	content: string;
 	showChains?: boolean;
+	isResult?: boolean;
+}
+
+export interface QueryResult {
+	chain: string;
+	method: string;
+	token: string;
+	result: number;
+	rawResult: string;
 }
