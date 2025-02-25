@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { BACKEND_URL } from "@/config";
 import { CoinMarketCapResponse } from "@/types/coinMarketCap";
-import { Message, QueryResponse, QueryResult } from "@/types/query";
+import { Message, QueryResponse } from "@/types/query";
 import { transformCoinMarketCapData } from "@/utils/coinMarketCap";
 import { queryMockTokenData } from "@/libs/queryMock";
 

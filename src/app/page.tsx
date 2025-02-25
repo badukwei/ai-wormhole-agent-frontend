@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useAIChat } from "@/hooks/useAIChat";
 import { Textarea } from "@/components/ui/Textarea";
 import { AiOutlineSend } from "react-icons/ai";
-import { queryMockTokenData } from "@/libs/queryMock";
 import AIChatBox from "@/components/chat/AIChatBox";
 
 const ChatPage = () => {

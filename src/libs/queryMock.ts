@@ -94,8 +94,12 @@ export async function queryMockTokenData(
 			result: parseInt(mockQueryResult, 16), // convert 16-bit data
 			rawResult: mockQueryResult,
 		};
-	} catch (error: any) {
-		console.error("Wormhole Mock Query Error:", error.message);
-		return { error: error.message };
+	} catch (error) {
+		if (error instanceof Error) {
+			console.error("Wormhole Mock Query Error:", error.message);
+			return { error: error.message };
+		}
+		console.error("Wormhole Mock Query Error:", String(error));
+		return { error: String(error) };
 	}
 }

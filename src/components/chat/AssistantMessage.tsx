@@ -1,7 +1,6 @@
 "use client";
 import { CoinMarketCapResponse } from "@/types/coinMarketCap";
 import React from "react";
-import { PulseLoader } from "react-spinners";
 
 interface AssistantMessageProps {
 	content: string;
