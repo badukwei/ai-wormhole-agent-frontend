@@ -79,7 +79,7 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
 										Method
 									</span>
 									<span className="font-medium">
-										{parsed.method}
+										{parsed.method?.replace(/([A-Z])/g, ' $1').toLowerCase().trim()}
 									</span>
 								</div>
 								<div className="flex flex-col">
